@@ -58,7 +58,7 @@ class App extends Component {
 
   loginHandler = (event, authData) => {
     event.preventDefault();
-    const graphqlQuery = {
+    const gqlQuery = {
       query: `
         {
           login(email: "${authData.email}", password: "${authData.password}") {
@@ -71,10 +71,10 @@ class App extends Component {
     this.setState({ authLoading: true });
     fetch('http://localhost:8091/graphql', {
       method: 'POST',
+      body: JSON.stringify(gqlQuery),
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(graphqlQuery)
+      }
     })
       .then(res => {
         return res.json();
@@ -118,7 +118,7 @@ class App extends Component {
   signupHandler = (event, authData) => {
     event.preventDefault();
     this.setState({ authLoading: true });
-    const graphqlQuery = {
+    const gqlQuery = {
       query: `
         mutation {
           createUser(userInput: {
@@ -138,7 +138,7 @@ class App extends Component {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(graphqlQuery)
+      body: JSON.stringify(gqlQuery)
     })
       .then(res => {
         return res.json();
