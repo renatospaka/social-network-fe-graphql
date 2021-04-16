@@ -22,19 +22,31 @@ class Feed extends Component {
   };
 
   componentDidMount() {
-    fetch('http://localhost:8091/auth/status', {
+    const gqlQuery = {
+      query: `
+        {
+          user {
+            status
+          }
+        }
+      `
+    }
+    fetch('http://localhost:8091/graphql', {
+      method: 'POST',
+      body: JSON.stringify(gqlQuery),
       headers: {
-        Authorization: 'Bearer ' + this.props.token
+        Authorization: 'Bearer ' + this.props.token,
+        'Content-Type': 'application/json'
       }
     })
       .then(res => {
-        if (res.status !== 200) {
-          throw new Error('Failed to fetch user status.');
-        }
         return res.json();
       })
       .then(resData => {
-        this.setState({ status: resData.status });
+        if (resData.errors) {
+          throw new Error('Fetching status failed.');
+        }
+        this.setState({ status: resData.data.user.status });
       })
       .catch(this.catchError);
 
@@ -57,8 +69,8 @@ class Feed extends Component {
 
     const gqlQuery = {
       query: `
-        {
-          getPosts(page: ${page}) {
+        query FetchPosts($currentPage: Int) {
+          getPosts(page: $currentPage) {
             posts {
               _id 
               title
@@ -72,7 +84,10 @@ class Feed extends Component {
             totalPosts
           }
         }
-      `
+      `,
+      variables: {
+        currentPage: page
+      }
     };
 
     fetch('http://localhost:8091/graphql', {
@@ -106,24 +121,33 @@ class Feed extends Component {
 
   statusUpdateHandler = event => {
     event.preventDefault();
-    fetch('http://localhost:8091/auth/status', {
-      method: 'PATCH',
+    const gqlQuery = {
+      query: `
+        mutation {
+          updateStatus (status: "${this.state.status}") 
+            {
+              status
+            }
+        }
+      `
+    }
+    fetch('http://localhost:8091/graphql', {
+      method: 'POST',
       headers: {
         Authorization: 'Bearer ' + this.props.token,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        status: this.state.status
-      })
+      body: JSON.stringify(gqlQuery)
     })
       .then(res => {
-        if (res.status !== 200 && res.status !== 201) {
-          throw new Error("Can't update status!");
-        }
         return res.json();
       })
       .then(resData => {
+        if (resData.errors) {
+          throw new Error('Fetching status failed.');
+        };
         console.log(resData);
+        this.setState({ status: resData.data.user.status });
       })
       .catch(this.catchError);
   };
