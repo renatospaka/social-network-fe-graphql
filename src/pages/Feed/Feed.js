@@ -69,7 +69,7 @@ class Feed extends Component {
 
     const gqlQuery = {
       query: `
-        query FetchPosts($currentPage: Int) {
+        query FetchPosts($currentPage: Int!) {
           getPosts(page: $currentPage) {
             posts {
               _id 
@@ -123,13 +123,16 @@ class Feed extends Component {
     event.preventDefault();
     const gqlQuery = {
       query: `
-        mutation {
-          updateStatus (status: "${this.state.status}") 
+        mutation UpdateUserStatus($userStatus: String!) {
+          updateStatus (status: $userStatus) 
             {
               status
             }
         }
-      `
+      `,
+      variables: {
+        userStatus: this.state.status
+      }
     }
     fetch('http://localhost:8091/graphql', {
       method: 'POST',
@@ -193,11 +196,11 @@ class Feed extends Component {
         const imageUrl = fileResData.filePath;
         let gqlQuery = {
           query: `
-            mutation {
+            mutation CreateNewPost($title: String!, $content: String!, $imageUrl: String!) {
               createPost(postInput: {
-                title: "${postData.title}", 
-                content: "${postData.content}", 
-                imageUrl: "${imageUrl}"
+                title: $title, 
+                content: $content, 
+                imageUrl: $imageUrl
               }) {
                 _id
                 title
@@ -209,19 +212,24 @@ class Feed extends Component {
                 createdAt
               }
             }
-          `
+          `,
+          variables: {
+            title: postData.title,
+            content: postData.content,
+            imageUrl: imageUrl
+          }
         };
 
         if (this.state.editPost) {
           gqlQuery = {
             query: `
-              mutation {
+              mutation UpdateExistingPost($postId: ID!, $title: String!, $content: String!, $imageUrl: String!) {
                 updatePost(
-                  id: "${this.state.editPost._id}",
+                  id: $postId,
                   postInput: {
-                    title: "${postData.title}", 
-                    content: "${postData.content}", 
-                    imageUrl: "${imageUrl}"
+                    title: $title, 
+                    content: $content, 
+                    imageUrl: $imageUrl
                   }
                 ) {
                   _id
@@ -234,10 +242,16 @@ class Feed extends Component {
                   createdAt
                 }
               }
-            `
+            `,
+            variables: {
+              postId: this.state.editPost._id,
+              title: postData.title, 
+              content: postData.content, 
+              imageUrl: imageUrl
+            }
           }
         }
-
+        console.log('UpdatePost', gqlQuery)
         return fetch('http://localhost:8091/graphql', {
           method: 'POST',
           body: JSON.stringify(gqlQuery),
